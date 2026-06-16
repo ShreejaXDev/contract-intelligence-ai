@@ -1,0 +1,7 @@
+pymupdf
+pdfplumber
+datasets
+pandas
+numpy
+jupyter
+matplotlib
