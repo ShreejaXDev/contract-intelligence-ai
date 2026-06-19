@@ -16,7 +16,7 @@ def add_document(doc_id, text, embedding):
     )
 
 
-def search_documents(query_embedding, n_results=3):
+def search_documents(query_embedding, n_results=1):
 
     results = collection.query(
         query_embeddings=[query_embedding.tolist()],

@@ -29,4 +29,14 @@ query_embedding = generate_embedding(query)
 
 results = search_documents(query_embedding)
 
-print(results["documents"])
+print("\nQuery:")
+print(query)
+
+print("\nResults:")
+
+for i, doc in enumerate(results["documents"][0]):
+    print(f"\nResult {i+1}:")
+    print(doc)
+
+print("\nDistances:")
+print(results["distances"])
