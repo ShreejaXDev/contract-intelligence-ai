@@ -14,3 +14,4 @@ print("\nDetected Clauses:\n")
 
 for clause in clauses:
     print(clause)
+
