@@ -1,0 +1,6 @@
+saved_model/
+results/
+
+*.safetensors
+*.pt
+*.bin
