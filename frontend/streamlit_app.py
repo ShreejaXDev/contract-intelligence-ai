@@ -1,4 +1,5 @@
 import streamlit as st
+import requests
 
 # -----------------------------------
 # Page Configuration
@@ -24,51 +25,181 @@ uploaded_file = st.sidebar.file_uploader(
     type=["pdf"]
 )
 
-# -----------------------------------
-# Main Content
-# -----------------------------------
 st.divider()
 
 st.header("📊 Contract Analysis Results")
 
+# -------------------------------
+# API URL
+# -------------------------------
+
+API_URL = "http://127.0.0.1:8000/upload"
+
 if uploaded_file is None:
     st.warning("Please upload a contract PDF from the sidebar to begin analysis.")
 
-# -----------------------------------
-# Empty Result Sections
-# -----------------------------------
+else:
 
-col1, col2 = st.columns(2)
+    if st.button("Analyze Contract"):
 
-with col1:
-    st.subheader("📄 Contract Summary")
-    st.info("Summary will appear here after analysis.")
+        with st.spinner("Analyzing Contract..."):
 
-with col2:
-    st.subheader("⚠️ Risk Score")
-    st.info("Risk score will appear here after analysis.")
+            files = {
+                "file": (
+                    uploaded_file.name,
+                    uploaded_file.getvalue(),
+                    "application/pdf"
+                )
+            }
 
-st.markdown("---")
+            response = requests.post(API_URL, files=files)
 
-st.subheader("📋 Key Clauses")
-st.info("Detected clauses will appear here.")
+            if response.status_code == 200:
 
-st.markdown("---")
+                data = response.json()
 
-st.subheader("🚨 Potential Risks")
-st.info("Potential risks identified in the contract will appear here.")
+                analysis = data["analysis"]
 
-st.markdown("---")
+            else:
 
-st.subheader("💡 AI Recommendations")
-st.info("Suggestions and recommendations will appear here.")
+                st.error("Backend Error")
 
-st.markdown("---")
+                st.stop()
 
-st.subheader("📑 Clause Classification")
-st.info("Clause categories will appear here.")
+        # -----------------------------------
+        # Summary
+        # -----------------------------------
 
-st.markdown("---")
+        col1, col2 = st.columns(2)
 
-st.subheader("📝 Named Entities")
-st.info("Important entities (People, Organizations, Dates, etc.) will appear here.")
+        with col1:
+
+            st.subheader("📄 Contract Summary")
+
+            st.success(
+                f"Total Clauses : {analysis['total_clauses']}"
+            )
+
+        with col2:
+
+            st.subheader("⚠️ Risk Score")
+
+            risk = analysis["risk_summary"]
+
+            st.metric("High Risk", risk["High"])
+            st.metric("Medium Risk", risk["Medium"])
+            st.metric("Low Risk", risk["Low"])
+
+        st.markdown("---")
+
+        # -----------------------------------
+        # Clause Classification
+        # -----------------------------------
+
+        st.subheader("📑 Clause Classification")
+
+        for clause in analysis["predictions"]:
+
+            with st.expander(
+                f"Clause {clause['clause_number']} : {clause['category']}"
+            ):
+
+                st.write("### Category")
+                st.write(clause["category"])
+
+                st.write("### Confidence")
+                st.progress(clause["confidence"] / 100)
+                st.write(f"{clause['confidence']} %")
+
+                st.write("### Risk")
+
+                st.error(
+                    f"{clause['risk_level']} Risk"
+                )
+
+                st.write("### Reason")
+
+                st.info(
+                    clause["reason"]
+                )
+
+                st.write("### Clause Text")
+
+                st.write(
+                    clause["text"]
+                )
+
+        st.markdown("---")
+
+        # -----------------------------------
+        # Potential Risks
+        # -----------------------------------
+
+        st.subheader("🚨 Potential Risks")
+
+        high_risk = [
+            c for c in analysis["predictions"]
+            if c["risk_level"] == "High"
+        ]
+
+        if len(high_risk) == 0:
+
+            st.success("No High Risk Clauses Found")
+
+        else:
+
+            for clause in high_risk:
+
+                st.error(
+
+                    f"Clause {clause['clause_number']} "
+
+                    f"({clause['category']})"
+
+                )
+
+        st.markdown("---")
+
+        # -----------------------------------
+        # AI Recommendations
+        # -----------------------------------
+
+        st.subheader("💡 AI Recommendations")
+
+        for clause in analysis["predictions"]:
+
+            st.write(
+
+                f"• Clause {clause['clause_number']} "
+
+                f"({clause['category']}) : "
+
+                f"{clause['reason']}"
+
+            )
+
+        st.markdown("---")
+
+        # -----------------------------------
+        # Named Entities
+        # -----------------------------------
+
+        st.subheader("📝 Named Entities")
+
+        for clause in analysis["predictions"]:
+
+            with st.expander(
+
+                f"Clause {clause['clause_number']}"
+
+            ):
+
+                entities = clause["entities"]
+
+                for key, value in entities.items():
+
+                    if len(value) > 0:
+
+                        st.write(f"**{key}**")
+
+                        st.write(value)
